@@ -1,24 +1,43 @@
 # CubeCalc
 
-python command line tool to perform typical financial calculations, such as IRR, NPV in TM1
+Python command line tool to perform typical financial calculations in TM1:
+
+-  EFFECT
+-  FV
+-  FV_SCHEDULE
+-  IRR
+-  MIRR
+-  NOMINAL
+-  NPER
+-  NPV
+-  PMT
+-  PPMT
+-  PV
+-  RATE
+-  SLN
+-  STDEV
+-  STDEV_P
+-  XIRR
+-  XNPV
 
 # Usage
-execute the main.py with 7 + x arguments:
-- method (IRR, NPV)
-- name of source instance in config.ini file
-- name of target instance in config.ini file
-- name of source cube 
-- name of target cube 
-- name of source view (view must be defined as a N : 1 or 1 : N matrix) 
-- name of target view (view must be defined as a 1 : 1 matrix) 
-- ...
+execute the main.py with arguments. Samples:
 
+> --method "IRR" --tm1_source "tm1srv01" --tm1_target "tm1srv01" --cube_source "Project Planning" --cube_target "Project Summary" --view_source "Project1" --view_target "Project1 IRR" --tidy True
 
-> C:/Anaconda3/python main.py "IRR" "tm1srv01" "tm1srv01" "project planning" "project summary" "project1" "project1 IRR"
+> --method "NPV" --tm1_source "tm1srv01" --tm1_target "tm1srv01" --cube_source "Project Planning" --cube_target "Project Summary" --view_source "Project1" --view_target "Project1 NPV" --rate 0.1
 
-or
+> --method "STDEV" --tm1_source "tm1srv01" --tm1_target "tm1srv01" --cube_source "Project Planning" --cube_target "Project Summary" --view_source "Project1" --view_target "Project1 STDEV"
 
-> C:/Anaconda3/python main.py "NPV" "tm1srv01" "tm1srv01" "project planning" "project summary" "project2" "project2 NPV" 0.02
+> --method "FV" --tm1_target "tm1srv01" --cube_target "Project Summary" --view_target "Project1 FV" --rate 0.1 --nper 3 --pmt 1 --pv -100
+
+> --method "PMT" --tm1_target "tm1srv01" --cube_target "Project Summary" --view_target "Project1 PMT" --rate 0.1 --nper 3 --pv 1000
+
+> --method "PV" --tm1_target "tm1srv01" --cube_target "Project Summary" --view_target "Project1 PV" --rate 0.1 --nper 3 --pmt 1 --fv -100 --when 0
+
+> --method "MIRR" --tm1_source "tm1srv01" --tm1_target "tm1srv01" --cube_source "Project Planning" --cube_target "Project Summary" --view_source "Project1" --view_target "Project1 MIRR" --finance_rate 0.12 --reinvest_rate 0.1
+
+All arguments have the same names as in the Excel functions (except: `type` is called `when` in CubeCalc since `type` is a reserved word in python) 
 
 # Installation
 
@@ -31,5 +50,18 @@ Just download the repository
 
 
 # Tests
-No tests yet
+in Tests.py file
+
+
+# Contribution
+CubeCalc is an open source project. It thrives on contribution from the TM1 community. If you find a bug or want to add more functions to this repository, just:
+- Fork the repository
+- Add the new function to the methods.py file + Add some tests for your function in the Tests.py file
+- Create a MR
+and we will merge in the changes
+
+
+
+
+
 
