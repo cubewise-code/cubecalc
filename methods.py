@@ -1,35 +1,292 @@
+import functools
+
 import numpy as np
+from scipy import optimize
 
 
-def irr(tm1_services, tm1_source, tm1_target, cube_source, cube_target, view_source, view_target):
-    values = tm1_services[tm1_source].cubes.cells.execute_view_values(
-        cube_name=cube_source,
-        view_name=view_source,
-        private=False)
-    result = np.irr(values=list(values))
-    mdx = tm1_services[tm1_target].cubes.views.get_native_view(
-        cube_name=cube_target,
-        view_name=view_target,
-        private=False).MDX
-    tm1_services[tm1_target].cubes.cells.write_values_through_cellset(
-        mdx=mdx,
-        values=(result,))
+def tm1_io(func):
+    """ Higher Order Function to read values from source and write result to target view
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        # read values from view
+        if "tm1_services" in kwargs and "tm1_source" in kwargs and "cube_source" in kwargs and "view_source" in kwargs:
+            tm1 = kwargs["tm1_services"][kwargs["tm1_source"]]
+            if "values" not in kwargs:
+                kwargs["values"] = list(tm1.cubes.cells.execute_view_values(
+                    cube_name=kwargs["cube_source"],
+                    view_name=kwargs["view_source"],
+                    private=False))
+        result = func(*args, **kwargs)
+        # write result to source view
+        if "tm1_services" in kwargs and "tm1_target" in kwargs and "cube_target" in kwargs and "view_target" in kwargs:
+            tm1 = kwargs["tm1_services"][kwargs["tm1_target"]]
+            mdx = tm1.cubes.views.get(
+                cube_name=kwargs["cube_target"],
+                view_name=kwargs["view_target"],
+                private=False).MDX
+            tm1.cubes.cells.write_values_through_cellset(
+                mdx=mdx,
+                values=(result,))
+        return result
+
+    return wrapper
 
 
-def npv(tm1_services, tm1_source, tm1_target, cube_source, cube_target, view_source, view_target, discount_rate):
-    values = tm1_services[tm1_source].cubes.cells.execute_view_values(
-        cube_name=cube_source,
-        view_name=view_source,
-        private=False)
-    result = np.npv(rate=float(discount_rate), values=list(values))
-    mdx = tm1_services[tm1_target].cubes.views.get_native_view(
-        cube_name=cube_target,
-        view_name=view_target,
-        private=False).MDX
-    tm1_services[tm1_target].cubes.cells.write_values_through_cellset(
-        mdx=mdx,
-        values=(result,))
+def tm1_tidy(func):
+    """ Higher Order Function to delete source view and target view (if param tidy is set to true)
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        finally:
+            if "tm1_services" in kwargs and kwargs.get("tidy", False) in ('True', 'true', 'TRUE', '1', 1):
+                # delete source view
+                if "tm1_source" in kwargs and "cube_source" in kwargs and "view_source" in kwargs:
+                    tm1 = kwargs["tm1_services"][kwargs["tm1_source"]]
+                    tm1.cubes.views.delete(
+                        cube_name=kwargs["cube_source"],
+                        view_name=kwargs["view_source"],
+                        private=False)
+                # delete target view
+                if kwargs and "tm1_target" in kwargs and "cube_target" in kwargs and "view_target" in kwargs:
+                    tm1 = kwargs["tm1_services"][kwargs["tm1_target"]]
+                    tm1.cubes.views.delete(
+                        cube_name=kwargs["cube_target"],
+                        view_name=kwargs["view_target"],
+                        private=False)
+
+    return wrapper
 
 
-def stdev(tm1_services, tm1_source, tm1_target, cube_source, cube_target, view_source, view_target, *args):
-    print(args)
+def _nroot(value, n):
+    """
+    Returns the nth root of the given value.
+    """
+    return value ** (1.0 / n)
+
+
+@tm1_tidy
+@tm1_io
+def irr(values, *args, **kwargs):
+    return np.irr(values=values)
+
+
+@tm1_tidy
+@tm1_io
+def npv(rate, values, *args, **kwargs):
+    return np.npv(rate=float(rate), values=list(values))
+
+
+@tm1_tidy
+@tm1_io
+def stdev(values, *args, **kwargs):
+    return np.std(values)
+
+
+@tm1_tidy
+@tm1_io
+def stdev_p(values, *args, **kwargs):
+    return np.std(values, ddof=1)
+
+
+@tm1_tidy
+@tm1_io
+def fv(rate, nper, pmt, pv, when=0, *args, **kwargs):
+    """ Calculates the future value
+
+    :param rate: Rate of interest as decimal (not per cent) per period
+    :param nper: Number of compounding periods
+    :param pmt: Payment
+    :param pv: Present Value
+    :param when: 0 or 1. When the payment is made (Default: the payment is made at the end of the period)
+    :param args:
+    :param kwargs:
+    :return:
+    """
+    return np.fv(rate=float(rate), nper=float(nper), pmt=float(pmt), pv=float(pv), when=int(when))
+
+
+@tm1_tidy
+@tm1_io
+def fv_schedule(principal, values, *args, **kwargs):
+    """ The future value with the variable interest rate
+
+    :param principal: Principal is the present value of a particular investment
+    :param values: A series of interest rate
+    :return:
+    """
+    return functools.reduce(lambda x, y: x + (x * y), values, float(principal))
+
+
+@tm1_tidy
+@tm1_io
+def pv(rate, nper, pmt, fv, when=0, *args, **kwargs):
+    """ Calculate the Present Value
+
+    :param rate: It is the interest rate/period
+    :param nper: Number of periods
+    :param pmt: Payment/period
+    :param fv: Future Value
+    :param when: 0 or 1. When the payment is made (Default: the payment is made at the end of the period)
+    :return:
+    """
+    return np.pv(rate=float(rate), nper=float(nper), pmt=float(pmt), fv=float(fv), when=int(when))
+
+
+@tm1_tidy
+@tm1_io
+def xnpv(rate, values, dates, *args, **kwargs):
+    """ Calculates the Net Present Value for a schedule of cash flows that is not necessarily periodic
+
+    :param rate: Discount rate for a period
+    :param values: Positive or negative cash flows
+    :param dates: Specific dates
+    :return:
+    """
+    rate = float(rate)
+    if len(values) != len(dates):
+        raise ValueError('values and dates must be the same length')
+    if sorted(dates) != dates:
+        raise ValueError('dates must be in chronological order')
+    first_date = dates[0]
+    return sum([value / ((1 + rate) ** ((date - first_date).days / 365.0)) for (value, date) in zip(values, dates)])
+
+
+@tm1_tidy
+@tm1_io
+def pmt(rate, nper, pv, fv=0, when=0, *args, **kwargs):
+    """ PMT denotes the periodical payment required to pay off for a particular period of time with a constant interest rate
+
+    :param rate: Interest rate/period
+    :param nper: Number of periods
+    :param pv: Present Value
+    :param fv: Future Value, if not assigned 0 is assumed
+    :param when: 0 or 1. When the payment is made (Default: the payment is made at the end of the period)
+    :return:
+    """
+    return np.pmt(rate=float(rate), nper=float(nper), pv=float(pv), fv=float(fv), when=int(when))
+
+
+@tm1_tidy
+@tm1_io
+def ppmt(rate, per, nper, pv, fv=0, when=0, *args, **kwargs):
+    """ calculates payment on principal with a constant interest rate and constant periodic payments
+
+    :param rate: Interest rate/period
+    :param per: The period for which the principal is to be calculated
+    :param nper: Number of periods
+    :param pv: Present Value
+    :param fv: Future Value, if not assigned 0 is assumed
+    :param when: 0 or 1. When the payment is made (Default: the payment is made at the end of the period)
+    :return:
+    """
+    return np.ppmt(rate=float(rate), per=float(per), nper=float(nper), pv=float(pv), fv=float(fv), when=int(when))
+
+
+@tm1_tidy
+@tm1_io
+def mirr(values, finance_rate, reinvest_rate, *args, **kwargs):
+    """ MIRR is calculated by assuming NPV as zero
+
+    :param values: Positive or negative cash flows
+    :param finance_rate: Interest rate paid for the money used in cash flows
+    :param reinvest_rate: Interest rate paid for reinvestment of cash flows
+    :return:
+    """
+    return np.mirr(values=values, finance_rate=float(finance_rate), reinvest_rate=float(reinvest_rate))
+
+
+@tm1_tidy
+@tm1_io
+def xirr(values, dates, guess=0.1, *args, **kwargs):
+    """ Returns the internal rate of return for a schedule of cash flows that is not necessarily periodic.
+
+    :param values: Positive or negative cash flows
+    :param dates: Specific dates
+    :param guess: An assumption of what you think IRR should be
+    :return:
+    """
+    return optimize.newton(lambda r: xnpv(r, values, dates), float(guess))
+
+
+@tm1_tidy
+@tm1_io
+def nper(rate, pmt, pv, fv=0, when=0, *args, **kwargs):
+    """ Number of periods one requires to pay off the loan
+
+    :param rate: Interest rate/period
+    :param pmt: Amount paid per period
+    :param pv: Present Value
+    :param fv: Future Value, if not assigned 0 is assumed
+    :param when: 0 or 1. When the payment is made (Default: the payment is made at the end of the period)
+    :return:
+    """
+    return np.nper(rate=float(rate), pmt=float(pmt), pv=float(pv), fv=float(fv), when=int(when)).item(0)
+
+
+@tm1_tidy
+@tm1_io
+def rate(nper, pmt, pv, fv=0, when=0, guess=0.1, maxiter=100, *args, **kwargs):
+    """ The interest rate needed to pay off the loan in full for a given period of time
+
+    :param nper: Number of periods
+    :param pmt: Amount paid per period
+    :param pv: Present Value
+    :param fv: Future Value, if not assigned 0 is assumed
+    :param when: 0 or 1. When the payment is made (Default: the payment is made at the end of the period)
+    :param guess: An assumption of what you think the rate should be
+    :param maxiter: maximum number of iterations
+    :return:
+    """
+    return np.rate(
+        nper=float(nper),
+        pmt=float(pmt),
+        pv=float(pv),
+        fv=float(fv),
+        when=int(when),
+        guess=float(guess),
+        maxiter=int(maxiter))
+
+
+@tm1_tidy
+@tm1_io
+def effect(nominal_rate, npery, *args, **kwargs):
+    """ Returns the effective annual interest rate, given the nominal annual interest rate
+    and the number of compounding periods per year.
+
+    :param nominal_rate: Nominal Interest Rate
+    :param npery: Number of compounding per year
+    :return:
+    """
+    nominal_rate, npery = float(nominal_rate), float(npery)
+    return ((1 + (nominal_rate / npery)) ** npery) - 1
+
+
+@tm1_tidy
+@tm1_io
+def nominal(effect_rate, npery, *args, **kwargs):
+    """ Returns the nominal annual interest rate, given the effective rate and the number of compounding periods per year.
+
+    :param effect_rate: Effective annual interest rate
+    :param npery: Number of compounding per year
+    :return:
+    """
+    effect_rate, npery = float(effect_rate), float(npery)
+    return (_nroot(effect_rate + 1, npery) - 1) * npery
+
+
+@tm1_tidy
+@tm1_io
+def sln(cost, salvage, life, *args, **kwargs):
+    """ Returns the straight-line depreciation of an asset for one period.
+
+    :param cost: Cost of asset when bought (initial amount)
+    :param salvage: Value of asset after depreciation
+    :param life: Number of periods over which the asset is being depreciated
+    :return:
+    """
+    return (float(cost) - float(salvage)) / float(life)

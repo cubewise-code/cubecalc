@@ -2,9 +2,9 @@ import configparser
 import datetime
 import logging
 import os
-import sys
 from base64 import b64decode
 
+import click
 from TM1py import TM1Service
 from TM1py.Utils.Utils import CaseAndSpaceInsensitiveDict
 
@@ -13,7 +13,21 @@ import methods
 METHODS = CaseAndSpaceInsensitiveDict({
     "IRR": methods.irr,
     "NPV": methods.npv,
-    "STDEV": methods.stdev
+    "STDEV": methods.stdev,
+    "STDEV_P": methods.stdev_p,
+    "FV": methods.fv,
+    "FV_SCHEDULE": methods.fv_schedule,
+    "PV": methods.pv,
+    "XNPV": methods.xnpv,
+    "PMT": methods.pmt,
+    "PPMT": methods.ppmt,
+    "MIRR": methods.mirr,
+    "XIRR": methods.xirr,
+    "NPER": methods.nper,
+    "RATE": methods.rate,
+    "EFFECT": methods.effect,
+    "NOMINAL": methods.nominal,
+    "SLN": methods.sln
 })
 
 
@@ -79,100 +93,53 @@ def logout(tm1_services):
         tm1.logout()
 
 
-def translate_cmd_arguments(tm1_services, method, tm1_source, tm1_target, cube_source, cube_target, view_source,
-                            view_target, *args):
-    """ Translation and Validity-checks for command line arguments.
-
-    :param view_target:
-    :param view_source:
-    :param cube_target:
-    :param cube_source:
-    :param tm1_target:
-    :param tm1_source:
-    :param tm1_services:
-    :param args:
-    :return:
-    """
-
-    # method not implemented
-    if method not in METHODS:
-        msg = "method {method} not implemented.".format(method=method)
-        logging.error(msg)
-        raise ValueError(msg)
-
-    # source instance not in config
-    if tm1_source not in tm1_services:
-        msg = "TM1 instance {instance} not specified in config.".format(instance=tm1_source)
-        logging.error(msg)
-        raise ValueError(msg)
-
-    # target instance not in config
-    if tm1_target not in tm1_services:
-        msg = "TM1 instance {instance} not specified in config.".format(instance=tm1_target)
-        logging.error(msg)
-        raise ValueError(msg)
-
-    # cube_source doesn't exist
-    if not tm1_services[tm1_source].cubes.exists(cube_source):
-        msg = "source cube {cube} doesn't exist in instance {instance}.".format(cube=cube_source, instance=tm1_target)
-        logging.error(msg)
-        raise ValueError(msg)
-
-    # cube_target doesn't exist
-    if not tm1_services[tm1_target].cubes.exists(cube_target):
-        msg = "target cube {cube} doesn't exist in instance {instance}.".format(cube=cube_target, instance=tm1_target)
-        logging.error(msg)
-        raise ValueError(msg)
-
-    # view_source doesn't exist
-    if not tm1_services[tm1_target].cubes.views.exists(
-            cube_name=cube_source,
-            view_name=view_source,
-            private=False):
-        msg = "source view {view} doesn't exist in instance {instance}.".format(view=view_source, instance=tm1_source)
-        logging.error(msg)
-        raise ValueError(msg)
-
-    # view_target doesn't exist
-    if not tm1_services[tm1_source].cubes.views.exists(
-            cube_name=cube_target,
-            view_name=view_target,
-            private=False):
-        msg = "target view {view} doesn't exist in instance {instance}.".format(view=view_target, instance=tm1_target)
-        logging.error(msg)
-        raise ValueError(msg)
-
-    return (method, tm1_source, tm1_target, cube_source, cube_target, view_source, view_target, *args)
-
-
-if __name__ == "__main__":
-    """ Receives > 7 arguments arguments: 
+@click.command(
+    context_settings=dict(
+        ignore_unknown_options=True,
+        allow_extra_args=True))
+@click.pass_context
+def main(click_arguments):
+    """ Needs > 7 arguments arguments:
     method, 
-    source_instance, 
-    target_instance, 
+    tm1_source,
+    tm1_target,
     cube_source, 
     cube_target, 
     view_source, 
-    view_target, ...
+    view_target,
+    ...
     """
+    parameters = {click_arguments.args[arg][2:]: click_arguments.args[arg + 1]
+                  for arg
+                  in range(0, len(click_arguments.args), 2)}
     logging.info("{app_name} starts. Parameters: {parameters}.".format(
         app_name=APPNAME,
-        parameters=sys.argv))
+        parameters=parameters))
     # start timer
     start = datetime.datetime.now()
 
     # setup connections
     tm1_services = setup_tm1_services()
 
-    # read commandline arguments
-    method, *args = translate_cmd_arguments(tm1_services, *sys.argv[1:])
+    # challenge commandline arguments
+    method = parameters.pop('method')
 
     # execution
     try:
-        METHODS[method](tm1_services, *args)
+        result = METHODS[method](**parameters, tm1_services=tm1_services)
+        logging.info("Successfully calculated {method} with Result: {result} from Parameters: {parameters}".format(
+            method=method,
+            parameters=parameters,
+            result=result))
+    except:
+        logging.exception("Error happened during Calculation:")
     finally:
-        logout(tm1_services)
+        logout(tm1_services=tm1_services)
     # timing
     end = datetime.datetime.now()
     duration = end - start
     logging.info(("{app_name} ends. Duration: " + str(duration)).format(app_name=APPNAME))
+
+
+if __name__ == "__main__":
+    result = main()
