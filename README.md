@@ -39,6 +39,12 @@ execute the main.py with arguments. Samples:
 
 All arguments have the same names as in the Excel functions (except: `type` is called `when` in CubeCalc since `type` is a reserved word in python) 
 
+# Requirements
+- [TM1py](https://github.com/cubewise-code/TM1py)
+- [numpy](https://github.com/numpy/numpy)
+- [scipy](https://github.com/scipy/scipy)
+- [click](https://github.com/pallets/click/)
+
 # Installation
 
 Just download the repository
