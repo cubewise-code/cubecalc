@@ -1,4 +1,4 @@
-# CubeCalc
+![](https://github.com/MariusWirtz/CubeCalc/blob/master/Images/logo.svg)
 
 Python command line tool to perform typical financial calculations in TM1:
 
