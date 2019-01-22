@@ -11,10 +11,10 @@ with TM1Service(**config['tm1srv01']) as tm1:
     # create dimensions
 
     dimension = Dimension(
-        name="Project")
+        name="Py Project")
     hierarchy = Hierarchy(
-        name="Project",
-        dimension_name="Project",
+        name="Py Project",
+        dimension_name="Py Project",
         elements=[
             Element("Project1", "Numeric"),
             Element("Project2", "Numeric"),
@@ -24,10 +24,10 @@ with TM1Service(**config['tm1srv01']) as tm1:
         tm1.dimensions.create(dimension)
 
     dimension = Dimension(
-        name="Quarter")
+        name="Py Quarter")
     hierarchy = Hierarchy(
-        name="Quarter",
-        dimension_name="Quarter",
+        name="Py Quarter",
+        dimension_name="Py Quarter",
         elements=[
             Element("2018-Q1", "Numeric"),
             Element("2018-Q2", "Numeric"),
@@ -46,19 +46,20 @@ with TM1Service(**config['tm1srv01']) as tm1:
         tm1.dimensions.create(dimension)
 
     dimension = Dimension(
-        name="Project Planning Measure")
+        name="Py Project Planning Measure")
     hierarchy = Hierarchy(
-        name="Project Planning Measure",
-        dimension_name="Project Planning Measure",
+        name="Py Project Planning Measure",
+        dimension_name="Py Project Planning Measure",
         elements=[Element("Cashflow", "Numeric")])
+    dimension.add_hierarchy(hierarchy)
     if not tm1.dimensions.exists(dimension.name):
         tm1.dimensions.create(dimension)
 
     dimension = Dimension(
-        name="Project Summary Measure")
+        name="Py Project Summary Measure")
     hierarchy = Hierarchy(
-        name="Project Summary Measure",
-        dimension_name="Project Planning Measure",
+        name="Py Project Summary Measure",
+        dimension_name="Py Project Planning Measure",
         elements=[Element("IRR", "Numeric"), Element("NPV", "Numeric")])
     dimension.add_hierarchy(hierarchy)
     if not tm1.dimensions.exists(dimension.name):
@@ -66,20 +67,20 @@ with TM1Service(**config['tm1srv01']) as tm1:
 
     # create cube 1
     cube = Cube(
-        name="Project Planning", dimensions=["Project", "Quarter", "Project Planning Measure"])
+        name="Py Project Planning", dimensions=["Py Project", "Py Quarter", "Py Project Planning Measure"])
     if not tm1.cubes.exists(cube.name):
         tm1.cubes.create(cube)
 
     # create cube 2
     cube = Cube(
-        name="Project Summary", dimensions=["Project", "Project Summary Measure"])
+        name="Py Project Summary", dimensions=["Py Project", "Py Project Summary Measure"])
     if not tm1.cubes.exists(cube.name):
         tm1.cubes.create(cube)
 
     # create views
     for project in ("Project1", "Project2", "Project3"):
         # Project Summary
-        cube_name = "Project Summary"
+        cube_name = "Py Project Summary"
         view = NativeView(
             cube_name=cube_name,
             view_name=project + " NPV",
@@ -87,14 +88,14 @@ with TM1Service(**config['tm1srv01']) as tm1:
             suppress_empty_columns=False,
             suppress_empty_rows=False)
         view.add_row(
-            dimension_name="Project Summary Measure",
+            dimension_name="Py Project Summary Measure",
             subset=AnonymousSubset(
-                dimension_name="Project Summary Measure",
+                dimension_name="Py Project Summary Measure",
                 elements=["NPV"]))
         view.add_column(
-            dimension_name="Project",
+            dimension_name="Py Project",
             subset=AnonymousSubset(
-                dimension_name="Project",
+                dimension_name="Py Project",
                 elements=[project]))
         if tm1.cubes.views.exists(cube_name=view.cube, view_name=view.name, private=False):
             tm1.cubes.views.delete(cube_name=view.cube, view_name=view.name, private=False)
@@ -107,21 +108,21 @@ with TM1Service(**config['tm1srv01']) as tm1:
             suppress_empty_columns=False,
             suppress_empty_rows=False)
         view.add_row(
-            dimension_name="Project Summary Measure",
+            dimension_name="Py Project Summary Measure",
             subset=AnonymousSubset(
-                dimension_name="Project Summary Measure",
+                dimension_name="Py Project Summary Measure",
                 elements=["IRR"]))
         view.add_column(
-            dimension_name="Project",
+            dimension_name="Py Project",
             subset=AnonymousSubset(
-                dimension_name="Project",
+                dimension_name="Py Project",
                 elements=[project]))
         if tm1.cubes.views.exists(cube_name=view.cube, view_name=view.name, private=False):
             tm1.cubes.views.delete(cube_name=view.cube, view_name=view.name, private=False)
         tm1.cubes.views.create(view=view, private=False)
 
         # Project Planning
-        cube_name = "Project Planning"
+        cube_name = "Py Project Planning"
         view = NativeView(
             cube_name=cube_name,
             view_name=project,
@@ -129,20 +130,20 @@ with TM1Service(**config['tm1srv01']) as tm1:
             suppress_empty_columns=False,
             suppress_empty_rows=False)
         view.add_row(
-            dimension_name="Quarter",
+            dimension_name="Py Quarter",
             subset=AnonymousSubset(
-                dimension_name="Quarter",
-                expression="{Tm1SubsetAll([Quarter])}"))
+                dimension_name="Py Quarter",
+                expression="{Tm1SubsetAll([Py Quarter])}"))
         view.add_column(
-            dimension_name="Project",
+            dimension_name="Py Project",
             subset=AnonymousSubset(
-                dimension_name="Project",
+                dimension_name="Py Project",
                 elements=[project]))
         view.add_title(
-            dimension_name="Project Planning Measure",
+            dimension_name="Py Project Planning Measure",
             selection="Cashflow",
             subset=AnonymousSubset(
-                dimension_name="Project Planning Measure",
+                dimension_name="Py Project Planning Measure",
                 elements=["Cashflow"])
         )
         if tm1.cubes.views.exists(cube_name=view.cube, view_name=view.name, private=False):
@@ -189,6 +190,6 @@ with TM1Service(**config['tm1srv01']) as tm1:
         ('Project3', '2020-Q4', 'Cashflow'): 8000
     }
     tm1.cubes.cells.write_values(
-        cube_name="Project Planning",
+        cube_name="Py Project Planning",
         cellset_as_dict=cellset
     )
