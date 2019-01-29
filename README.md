@@ -21,7 +21,7 @@ Python command line tool to perform typical financial calculations in TM1:
 -  XNPV
 
 # Usage
-execute the main.py with arguments. Samples:
+execute the CubeCalc.py with arguments. Samples:
 
 > --method "IRR" --tm1_source "tm1srv01" --tm1_target "tm1srv01" --cube_source "Project Planning" --cube_target "Project Summary" --view_source "Project1" --view_target "Project1 IRR" --tidy True
 
@@ -52,7 +52,7 @@ Just download the repository
 # Samples
 - Adjust the config.ini file to match your setup
 - Execute the "setup sample.py" file 
-- Run main.py with appropriate arguments from the commandline or from TI
+- Run CubeCalc.py with appropriate arguments from the commandline or from TI
 
 
 # Tests

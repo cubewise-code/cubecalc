@@ -2,6 +2,7 @@ import configparser
 import datetime
 import logging
 import os
+import sys
 from base64 import b64decode
 
 import click
@@ -39,14 +40,14 @@ def set_current_directory():
     return directory
 
 
-APPNAME = "CubeCalc"
+APP_NAME = "CubeCalc"
 CURRENT_DIRECTORY = set_current_directory()
-LOGFILE = os.path.join(CURRENT_DIRECTORY, APPNAME + ".log")
+LOGFILE = os.path.join(CURRENT_DIRECTORY, APP_NAME + ".log")
 CONFIG = os.path.join(CURRENT_DIRECTORY, "config.ini")
 
 logging.basicConfig(
     filename=LOGFILE,
-    format='%(asctime)s - ' + APPNAME + ' - %(levelname)s - %(message)s',
+    format='%(asctime)s - ' + APP_NAME + ' - %(levelname)s - %(message)s',
     level=logging.INFO)
 
 
@@ -67,7 +68,7 @@ def setup_tm1_services():
         if tm1_server_name != config.default_section:
             try:
                 params["password"] = decrypt_password(params["password"])
-                tm1_services[tm1_server_name] = TM1Service(**params, session_context=APPNAME)
+                tm1_services[tm1_server_name] = TM1Service(**params, session_context=APP_NAME)
             # Instance not running, Firewall or wrong connection parameters
             except Exception as e:
                 logging.error("TM1 instance {} not accessible. Error: {}".format(tm1_server_name, str(e)))
@@ -93,6 +94,37 @@ def logout(tm1_services):
         tm1.logout()
 
 
+def execute_method(tm1_services, method, parameters):
+    try:
+        result = METHODS[method](**parameters, tm1_services=tm1_services)
+        logging.info("Successfully calculated {method} with result: {result} from parameters: {parameters}".format(
+            method=method,
+            parameters=parameters,
+            result=result))
+        return True
+    except Exception as ex:
+        message = "Failed calculating {method} with parameters {parameters}. Error: {error}".format(
+            method=method,
+            parameters=parameters,
+            error=str(ex))
+        logging.error(message)
+        return False
+    finally:
+        logout(tm1_services=tm1_services)
+
+
+def exit_cubecalc(success, elapsed_time):
+    message = "{app_name} {ends}. Duration: {elapsed_time}.".format(
+        app_name=APP_NAME,
+        ends="aborted" if not success else "ends",
+        elapsed_time=str(elapsed_time))
+    if success:
+        logging.info(message)
+    else:
+        logging.error(message)
+        sys.exit(message)
+
+
 @click.command(
     context_settings=dict(
         ignore_unknown_options=True,
@@ -113,7 +145,7 @@ def main(click_arguments):
                   for arg
                   in range(0, len(click_arguments.args), 2)}
     logging.info("{app_name} starts. Parameters: {parameters}.".format(
-        app_name=APPNAME,
+        app_name=APP_NAME,
         parameters=parameters))
     # start timer
     start = datetime.datetime.now()
@@ -121,25 +153,16 @@ def main(click_arguments):
     # setup connections
     tm1_services = setup_tm1_services()
 
-    # challenge commandline arguments
-    method = parameters.pop('method')
+    # execute method
+    method_name = parameters.pop('method')
+    success = execute_method(tm1_services, method_name, parameters)
 
-    # execution
-    try:
-        result = METHODS[method](**parameters, tm1_services=tm1_services)
-        logging.info("Successfully calculated {method} with Result: {result} from Parameters: {parameters}".format(
-            method=method,
-            parameters=parameters,
-            result=result))
-    except:
-        logging.exception("Error happened during Calculation:")
-    finally:
-        logout(tm1_services=tm1_services)
-    # timing
-    end = datetime.datetime.now()
-    duration = end - start
-    logging.info(("{app_name} ends. Duration: " + str(duration)).format(app_name=APPNAME))
+    # exit
+    exit_cubecalc(success=success, elapsed_time=datetime.datetime.now() - start)
 
 
 if __name__ == "__main__":
-    result = main()
+    try:
+        main()
+    except Exception as exception:
+        sys.exit("Aborting {app_name}. Error: {error}".format(app_name=APP_NAME, error=str(exception)))
