@@ -23,19 +23,19 @@ Python command line tool to perform typical financial calculations in TM1:
 # Usage
 execute the CubeCalc.py with arguments. Samples:
 
-> --method "IRR" --tm1_source "tm1srv01" --tm1_target "tm1srv01" --cube_source "Project Planning" --cube_target "Project Summary" --view_source "Project1" --view_target "Project1 IRR" --tidy True
+> --method "IRR" --tm1_source "tm1srv01" --tm1_target "tm1srv01" --cube_source "Py Project Planning" --cube_target "Py Project Summary" --view_source "Project1" --view_target "Project1 IRR" --tidy True
 
-> --method "NPV" --tm1_source "tm1srv01" --tm1_target "tm1srv01" --cube_source "Project Planning" --cube_target "Project Summary" --view_source "Project1" --view_target "Project1 NPV" --rate 0.1
+> --method "NPV" --tm1_source "tm1srv01" --tm1_target "tm1srv01" --cube_source "Py Project Planning" --cube_target "Py Project Summary" --view_source "Project1" --view_target "Project1 NPV" --rate 0.1
 
-> --method "STDEV" --tm1_source "tm1srv01" --tm1_target "tm1srv01" --cube_source "Project Planning" --cube_target "Project Summary" --view_source "Project1" --view_target "Project1 STDEV"
+> --method "STDEV" --tm1_source "tm1srv01" --tm1_target "tm1srv01" --cube_source "Py Project Planning" --cube_target "Py Project Summary" --view_source "Project1" --view_target "Project1 STDEV"
 
-> --method "FV" --tm1_target "tm1srv01" --cube_target "Project Summary" --view_target "Project1 FV" --rate 0.1 --nper 3 --pmt 1 --pv -100
+> --method "FV" --tm1_target "tm1srv01" --cube_target "Py Project Summary" --view_target "Project1 FV" --rate 0.1 --nper 3 --pmt 1 --pv -100
 
-> --method "PMT" --tm1_target "tm1srv01" --cube_target "Project Summary" --view_target "Project1 PMT" --rate 0.1 --nper 3 --pv 1000
+> --method "PMT" --tm1_target "tm1srv01" --cube_target "Py Project Summary" --view_target "Project1 PMT" --rate 0.1 --nper 3 --pv 1000
 
-> --method "PV" --tm1_target "tm1srv01" --cube_target "Project Summary" --view_target "Project1 PV" --rate 0.1 --nper 3 --pmt 1 --fv -100 --when 0
+> --method "PV" --tm1_target "tm1srv01" --cube_target "Py Project Summary" --view_target "Project1 PV" --rate 0.1 --nper 3 --pmt 1 --fv -100 --when 0
 
-> --method "MIRR" --tm1_source "tm1srv01" --tm1_target "tm1srv01" --cube_source "Project Planning" --cube_target "Project Summary" --view_source "Project1" --view_target "Project1 MIRR" --finance_rate 0.12 --reinvest_rate 0.1
+> --method "MIRR" --tm1_source "tm1srv01" --tm1_target "tm1srv01" --cube_source "Py Project Planning" --cube_target "Py Project Summary" --view_source "Project1" --view_target "Project1 MIRR" --finance_rate 0.12 --reinvest_rate 0.1
 
 All arguments have the same names as in the Excel functions (except: `type` is called `when` in CubeCalc since `type` is a reserved word in python) 
 
@@ -44,6 +44,10 @@ All arguments have the same names as in the Excel functions (except: `type` is c
 - [numpy](https://github.com/numpy/numpy)
 - [scipy](https://github.com/scipy/scipy)
 - [click](https://github.com/pallets/click/)
+
+# Getting Started Guide
+
+For more information about how to use CubeCalc, just follow the [Getting Started Guide](https://code.cubewise.com/tm1py-help-content/getting-started-with-cubecalc).
 
 # Installation
 
