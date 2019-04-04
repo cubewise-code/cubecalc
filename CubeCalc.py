@@ -3,13 +3,13 @@ import datetime
 import logging
 import os
 import sys
-from base64 import b64decode
 
 import click
 from TM1py import TM1Service
 from TM1py.Utils.Utils import CaseAndSpaceInsensitiveDict
 
 import methods
+from utils import set_current_directory
 
 METHODS = CaseAndSpaceInsensitiveDict({
     "IRR": methods.irr,
@@ -31,15 +31,6 @@ METHODS = CaseAndSpaceInsensitiveDict({
     "SLN": methods.sln
 })
 
-
-def set_current_directory():
-    abspath = os.path.abspath(__file__)
-    directory = os.path.dirname(abspath)
-    # set current directory
-    os.chdir(directory)
-    return directory
-
-
 APP_NAME = "CubeCalc"
 CURRENT_DIRECTORY = set_current_directory()
 LOGFILE = os.path.join(CURRENT_DIRECTORY, APP_NAME + ".log")
@@ -51,66 +42,61 @@ logging.basicConfig(
     level=logging.INFO)
 
 
-def setup_tm1_services():
-    """ Return Dictionary with TM1ServerName (as in config.ini) : Instantiated TM1Service
+class CubeCalc:
 
-    :return: Dictionary server_names and TM1py.TM1Service instances pairs
-    """
-    if not os.path.isfile(CONFIG):
-        raise ValueError("{config} does not exist.".format(config=CONFIG))
-    tm1_services = dict()
-    # parse .ini
-    config = configparser.ConfigParser()
-    config.read(CONFIG)
-    # build tm1_services dictionary
-    for tm1_server_name, params in config.items():
-        # handle default values from configparser
-        if tm1_server_name != config.default_section:
-            try:
-                params["password"] = decrypt_password(params["password"])
-                tm1_services[tm1_server_name] = TM1Service(**params, session_context=APP_NAME)
-            # Instance not running, Firewall or wrong connection parameters
-            except Exception as e:
-                logging.error("TM1 instance {} not accessible. Error: {}".format(tm1_server_name, str(e)))
-    return tm1_services
+    def __init__(self):
+        self.tm1_services = dict()
+        self.setup()
 
+    def setup(self):
+        """ Fill Dictionary with TM1ServerName (as in config.ini) : Instantiated TM1Service
 
-def decrypt_password(encrypted_password):
-    """ b64 decoding
+        :return: Dictionary server_names and TM1py.TM1Service instances pairs
+        """
+        if not os.path.isfile(CONFIG):
+            raise ValueError("{config} does not exist.".format(config=CONFIG))
+        config = configparser.ConfigParser()
+        config.read(CONFIG)
+        # build tm1_services dictionary
+        for tm1_server_name, params in config.items():
+            # handle default values from configparser
+            if tm1_server_name != config.default_section:
+                try:
+                    self.tm1_services[tm1_server_name] = TM1Service(**params, session_context=APP_NAME)
+                # Instance not running, Firewall or wrong connection parameters
+                except Exception as e:
+                    logging.error("TM1 instance {} not accessible. Error: {}".format(tm1_server_name, str(e)))
 
-    :param encrypted_password: encrypted password with b64
-    :return: password in plain text
-    """
-    return b64decode(encrypted_password).decode("UTF-8")
+    def logout(self):
+        """ logout from all instances
+        :return:
+        """
+        for tm1 in self.tm1_services.values():
+            tm1.logout()
 
+    def execute(self, method, parameters):
+        """
 
-def logout(tm1_services):
-    """ logout from all instances
-
-    :param tm1_services:
-    :return:
-    """
-    for tm1 in tm1_services.values():
-        tm1.logout()
-
-
-def execute_method(tm1_services, method, parameters):
-    try:
-        result = METHODS[method](**parameters, tm1_services=tm1_services)
-        logging.info("Successfully calculated {method} with result: {result} from parameters: {parameters}".format(
-            method=method,
-            parameters=parameters,
-            result=result))
-        return True
-    except Exception as ex:
-        message = "Failed calculating {method} with parameters {parameters}. Error: {error}".format(
-            method=method,
-            parameters=parameters,
-            error=str(ex))
-        logging.error(message)
-        return False
-    finally:
-        logout(tm1_services=tm1_services)
+        :param method:
+        :param parameters:
+        :return:
+        """
+        try:
+            result = METHODS[method](**parameters, tm1_services=self.tm1_services)
+            logging.info("Successfully calculated {method} with result: {result} from parameters: {parameters}".format(
+                method=method,
+                parameters=parameters,
+                result=result))
+            return True
+        except Exception as ex:
+            message = "Failed calculating {method} with parameters {parameters}. Error: {error}".format(
+                method=method,
+                parameters=parameters,
+                error=str(ex))
+            logging.exception(message)
+            return False
+        finally:
+            self.logout()
 
 
 def exit_cubecalc(success, elapsed_time):
@@ -138,25 +124,22 @@ def main(click_arguments):
     cube_source, 
     cube_target, 
     view_source, 
-    view_target,
+    view_target
     ...
     """
     parameters = {click_arguments.args[arg][2:]: click_arguments.args[arg + 1]
                   for arg
                   in range(0, len(click_arguments.args), 2)}
+    method_name = parameters.pop('method')
     logging.info("{app_name} starts. Parameters: {parameters}.".format(
         app_name=APP_NAME,
         parameters=parameters))
     # start timer
     start = datetime.datetime.now()
-
     # setup connections
-    tm1_services = setup_tm1_services()
-
+    calculator = CubeCalc()
     # execute method
-    method_name = parameters.pop('method')
-    success = execute_method(tm1_services, method_name, parameters)
-
+    success = calculator.execute(method=method_name, parameters=parameters)
     # exit
     exit_cubecalc(success=success, elapsed_time=datetime.datetime.now() - start)
 
