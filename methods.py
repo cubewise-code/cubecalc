@@ -1,7 +1,20 @@
 import functools
 
 import numpy as np
+from dateutil import parser
 from scipy import optimize
+
+
+def _generate_dates_from_rows(rows):
+    try:
+        dates = []
+        for row in rows:
+            element = row[-1]
+            dates.append(parser.parse(element).date())
+        return dates
+    # Not a valid date string
+    except ValueError:
+        return None
 
 
 def tm1_io(func):
@@ -14,10 +27,13 @@ def tm1_io(func):
         if "tm1_services" in kwargs and "tm1_source" in kwargs and "cube_source" in kwargs and "view_source" in kwargs:
             tm1 = kwargs["tm1_services"][kwargs["tm1_source"]]
             if "values" not in kwargs:
-                kwargs["values"] = list(tm1.cubes.cells.execute_view_values(
+                rows_and_values = tm1.cubes.cells.execute_view_rows_and_values(
                     cube_name=kwargs["cube_source"],
                     view_name=kwargs["view_source"],
-                    private=False))
+                    private=False,
+                    element_unique_names=False)
+                kwargs["values"] = [values_by_row[0] for values_by_row in rows_and_values.values()]
+                kwargs["dates"] = _generate_dates_from_rows(rows_and_values.keys())
         result = func(*args, **kwargs)
         # write result to source view
         if "tm1_services" in kwargs and "tm1_target" in kwargs and "cube_target" in kwargs and "view_target" in kwargs:
