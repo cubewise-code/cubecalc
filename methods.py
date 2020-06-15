@@ -1,8 +1,10 @@
 import functools
+import statistics
 
 import numpy as np
 from dateutil import parser
 from scipy import optimize
+from scipy import stats
 
 
 def _generate_dates_from_rows(rows):
@@ -306,3 +308,82 @@ def sln(cost, salvage, life, *args, **kwargs):
     :return:
     """
     return (float(cost) - float(salvage)) / float(life)
+
+
+@tm1_tidy
+@tm1_io
+def mean(values, *args, **kwargs):
+    return statistics.mean(values)
+
+
+@tm1_tidy
+@tm1_io
+def sem(values, *args, **kwargs):
+    """
+    https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sem.html
+    :return:
+    """
+    return stats.sem(values)
+
+
+@tm1_tidy
+@tm1_io
+def median(values, *args, **kwargs):
+    return statistics.median(values)
+
+
+@tm1_tidy
+@tm1_io
+def mode(values, *args, **kwargs):
+    """
+    https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mode.html
+    :param values:
+    :return:
+    """
+    return stats.mode(values)[0][0]
+
+
+@tm1_tidy
+@tm1_io
+def var(values, *args, **kwargs):
+    return np.var(values)
+
+
+@tm1_tidy
+@tm1_io
+def var_p(values, *args, **kwargs):
+    return np.var(values, ddof=1)
+
+
+@tm1_tidy
+@tm1_io
+def kurt(values, *args, **kwargs):
+    """
+    https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.kurtosis.html
+    :param values:
+    :return:
+    """
+    return stats.kurtosis(values)
+
+
+@tm1_tidy
+@tm1_io
+def skew(values, *args, **kwargs):
+    """
+    https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.skew.html
+    :param values:
+    :return:
+    """
+    return stats.skew(values)
+
+
+@tm1_tidy
+@tm1_io
+def rng(values, *args, **kwargs):
+    return max(values) - min(values)
+
+
+@tm1_tidy
+@tm1_io
+def count(values, *args, **kwargs):
+    return len(set(values))

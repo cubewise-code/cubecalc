@@ -1,24 +1,37 @@
 ![](https://github.com/MariusWirtz/CubeCalc/blob/master/Images/logo.svg)
 
-Python command line tool to perform typical financial calculations in TM1:
+Python command line tool to perform typical financial and statistical calculations in TM1:
 
--  EFFECT
--  FV
--  FV_SCHEDULE
--  IRR
--  MIRR
--  NOMINAL
--  NPER
--  NPV
--  PMT
--  PPMT
--  PV
--  RATE
--  SLN
--  STDEV
--  STDEV_P
--  XIRR
--  XNPV
+- COUNT
+- EFFECT
+- FV
+- FV_SCHEDULE
+- IRR
+- KURTOSIS
+- MAX
+- MEAN
+- MEDIAN
+- MIN
+- MIRR
+- MODE
+- NOMINAL
+- NPER
+- NPV
+- PMT
+- PPMT
+- PV
+- RATE
+- RNG
+- SEM
+- SKEWNESS
+- SLN
+- STDEV
+- STDEV_P
+- SUM
+- VARIANCE
+- XIRR
+- XNPV
+
 
 # Usage
 execute the CubeCalc.py with arguments. Samples:

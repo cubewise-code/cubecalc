@@ -28,7 +28,19 @@ METHODS = CaseAndSpaceInsensitiveDict({
     "RATE": methods.rate,
     "EFFECT": methods.effect,
     "NOMINAL": methods.nominal,
-    "SLN": methods.sln
+    "SLN": methods.sln,
+    "MEAN": methods.mean,
+    "SEM": methods.sem,
+    "MEDIAN": methods.median,
+    "MODE": methods.mode,
+    "VAR": methods.var,
+    "KURT": methods.kurt,
+    "SKEW": methods.skew,
+    "RNG": methods.rng,
+    "MIN": min,
+    "MAX": max,
+    "SUM": sum,
+    "COUNT": methods.count
 })
 
 APP_NAME = "CubeCalc"

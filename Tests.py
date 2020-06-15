@@ -6,7 +6,7 @@ from datetime import date
 from TM1py import TM1Service, Dimension, Hierarchy, Element, Cube, NativeView, AnonymousSubset, MDXView
 
 from methods import irr, npv, stdev, stdev_p, fv, fv_schedule, pv, xnpv, pmt, ppmt, mirr, xirr, nper, rate, effect, \
-    nominal, sln
+    nominal, sln, mean, sem, median, mode, var, rng, count, skew, var_p, kurt
 
 config = configparser.ConfigParser()
 config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), "config.ini"))
@@ -124,6 +124,35 @@ SLN_INPUT_LIFE = 10
 SLN_EXPECTED_RESULT = 470
 SLN_TOLERANCE = 0.00001
 
+MEAN_VALUES = [1, 2, 3, 4, 5]
+MEAN_EXPECTED_RESULT = 3
+
+SEM_VALUES = [1, 2, 3, 4, 5]
+SEM_EXPECTED_RESULT = 0.707106781
+SEM_TOLERANCE = 0.00001
+
+MEDIAN_VALUES = [1, 2, 3, 4, 5]
+MEDIAN_EXPECTED_RESULT = 3
+
+MODE_VALUES = [1, 1, 2, 3, 4, 5]
+MODE_EXPECTED_RESULT = 1
+
+VAR_VALUES = [1, 2, 3, 4, 5]
+VAR_EXPECTED_RESULT = 2
+VAR_P_EXPECTED_RESULT = 2.5
+
+KURTOSIS_VALUES = [1, 2, 3, 4, 5]
+KURTOSIS_EXPECTED_RESULT = -1.3
+
+SKEWNESS_VALUES = [1, 2, 3, 4, 5]
+SKEWNESS_EXPECTED_RESULT = 0
+
+RNG_VALUES = [1, 2, 3, 4, 5]
+RNG_EXPECTED_RESULT = 4
+
+COUNT_VALUES = [1, 2, 3, 4, 5]
+COUNT_EXPECTED_RESULT = 5
+
 STDEV_INPUT_VALUES = (1, 2, 3, 4, 5, 6, 7, 8, 9)
 STDEV_EXPECTED_RESULT = 2.58198889747161
 STDEV_P_EXPECTED_RESULT = 2.73861278752583
@@ -214,6 +243,46 @@ class TestMethods(unittest.TestCase):
             salvage=SLN_INPUT_SALVAGE,
             life=SLN_INPUT_LIFE)
         self.assertAlmostEqual(result, SLN_EXPECTED_RESULT, delta=SLN_TOLERANCE)
+
+    def test_mean(self):
+        result = mean(values=[1, 2, 3, 4, 5])
+        self.assertEqual(result, 3)
+
+    def test_sem(self):
+        result = sem(SEM_VALUES)
+        self.assertAlmostEqual(result, SEM_EXPECTED_RESULT, delta=SEM_TOLERANCE)
+
+    def test_median(self):
+        result = median(MEDIAN_VALUES)
+        self.assertEqual(result, MEDIAN_EXPECTED_RESULT)
+
+    def test_mode(self):
+        result = mode(MODE_VALUES)
+        self.assertEqual(result, MODE_EXPECTED_RESULT)
+
+    def test_var(self):
+        result = var(VAR_VALUES)
+        self.assertEqual(result, VAR_EXPECTED_RESULT)
+
+    def test_var_p(self):
+        result = var_p(VAR_VALUES)
+        self.assertEqual(result, VAR_P_EXPECTED_RESULT)
+
+    def test_kurt(self):
+        result = kurt(KURTOSIS_VALUES)
+        self.assertEqual(result, KURTOSIS_EXPECTED_RESULT)
+
+    def test_skew(self):
+        result = skew(SKEWNESS_VALUES)
+        self.assertEqual(result, SKEWNESS_EXPECTED_RESULT)
+
+    def test_rng(self):
+        result = rng(RNG_VALUES)
+        self.assertEqual(result, RNG_EXPECTED_RESULT)
+
+    def test_count(self):
+        result = count(COUNT_VALUES)
+        self.assertEqual(result, COUNT_EXPECTED_RESULT)
 
 
 class TestDecorators(unittest.TestCase):
