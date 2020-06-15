@@ -37,9 +37,9 @@ METHODS = CaseAndSpaceInsensitiveDict({
     "KURT": methods.kurt,
     "SKEW": methods.skew,
     "RNG": methods.rng,
-    "MIN": min,
-    "MAX": max,
-    "SUM": sum,
+    "MIN": methods.min_,
+    "MAX": methods.max_,
+    "SUM": methods.sum_,
     "COUNT": methods.count
 })
 

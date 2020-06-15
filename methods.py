@@ -385,5 +385,23 @@ def rng(values, *args, **kwargs):
 
 @tm1_tidy
 @tm1_io
+def min_(values, *args, **kwargs):
+    return min(values)
+
+
+@tm1_tidy
+@tm1_io
+def max_(values, *args, **kwargs):
+    return max(values)
+
+
+@tm1_tidy
+@tm1_io
+def sum_(values, *args, **kwargs):
+    return sum(values)
+
+
+@tm1_tidy
+@tm1_io
 def count(values, *args, **kwargs):
     return len(set(values))
