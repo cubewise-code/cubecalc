@@ -7,7 +7,7 @@ Python command line tool to perform typical financial and statistical calculatio
 - FV
 - FV_SCHEDULE
 - IRR
-- KURTOSIS
+- KURT
 - MAX
 - MEAN
 - MEDIAN
@@ -23,12 +23,12 @@ Python command line tool to perform typical financial and statistical calculatio
 - RATE
 - RNG
 - SEM
-- SKEWNESS
+- SKEW
 - SLN
 - STDEV
 - STDEV_P
 - SUM
-- VARIANCE
+- VAR
 - XIRR
 - XNPV
 
