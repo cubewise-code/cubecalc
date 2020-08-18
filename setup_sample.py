@@ -59,7 +59,7 @@ with TM1Service(**config['tm1srv01']) as tm1:
         name="Py Project Summary Measure")
     hierarchy = Hierarchy(
         name="Py Project Summary Measure",
-        dimension_name="Py Project Planning Measure",
+        dimension_name="Py Project Summary Measure",
         elements=[Element("IRR", "Numeric"), Element("NPV", "Numeric")])
     dimension.add_hierarchy(hierarchy)
     if not tm1.dimensions.exists(dimension.name):
