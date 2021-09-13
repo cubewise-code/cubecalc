@@ -1,7 +1,7 @@
 import functools
 import statistics
 
-import numpy as np
+import numpy_financial as npf
 from dateutil import parser
 from scipy import optimize
 from scipy import stats
@@ -90,25 +90,25 @@ def _nroot(value, n):
 @tm1_tidy
 @tm1_io
 def irr(values, *args, **kwargs):
-    return np.irr(values=values)
+    return npf.irr(values=values)
 
 
 @tm1_tidy
 @tm1_io
 def npv(rate, values, *args, **kwargs):
-    return np.npv(rate=float(rate), values=list(values))
+    return npf.npv(rate=float(rate), values=list(values))
 
 
 @tm1_tidy
 @tm1_io
 def stdev(values, *args, **kwargs):
-    return np.std(values)
+    return npf.std(values)
 
 
 @tm1_tidy
 @tm1_io
 def stdev_p(values, *args, **kwargs):
-    return np.std(values, ddof=1)
+    return npf.std(values, ddof=1)
 
 
 @tm1_tidy
@@ -125,7 +125,7 @@ def fv(rate, nper, pmt, pv, when=0, *args, **kwargs):
     :param kwargs:
     :return:
     """
-    return np.fv(rate=float(rate), nper=float(nper), pmt=float(pmt), pv=float(pv), when=int(when))
+    return npf.fv(rate=float(rate), nper=float(nper), pmt=float(pmt), pv=float(pv), when=int(when))
 
 
 @tm1_tidy
@@ -152,7 +152,7 @@ def pv(rate, nper, pmt, fv, when=0, *args, **kwargs):
     :param when: 0 or 1. When the payment is made (Default: the payment is made at the end of the period)
     :return:
     """
-    return np.pv(rate=float(rate), nper=float(nper), pmt=float(pmt), fv=float(fv), when=int(when))
+    return npf.pv(rate=float(rate), nper=float(nper), pmt=float(pmt), fv=float(fv), when=int(when))
 
 
 @tm1_tidy
@@ -186,7 +186,7 @@ def pmt(rate, nper, pv, fv=0, when=0, *args, **kwargs):
     :param when: 0 or 1. When the payment is made (Default: the payment is made at the end of the period)
     :return:
     """
-    return np.pmt(rate=float(rate), nper=float(nper), pv=float(pv), fv=float(fv), when=int(when))
+    return npf.pmt(rate=float(rate), nper=float(nper), pv=float(pv), fv=float(fv), when=int(when))
 
 
 @tm1_tidy
@@ -202,7 +202,7 @@ def ppmt(rate, per, nper, pv, fv=0, when=0, *args, **kwargs):
     :param when: 0 or 1. When the payment is made (Default: the payment is made at the end of the period)
     :return:
     """
-    return np.ppmt(rate=float(rate), per=float(per), nper=float(nper), pv=float(pv), fv=float(fv), when=int(when))
+    return npf.ppmt(rate=float(rate), per=float(per), nper=float(nper), pv=float(pv), fv=float(fv), when=int(when))
 
 
 @tm1_tidy
@@ -215,7 +215,7 @@ def mirr(values, finance_rate, reinvest_rate, *args, **kwargs):
     :param reinvest_rate: Interest rate paid for reinvestment of cash flows
     :return:
     """
-    return np.mirr(values=values, finance_rate=float(finance_rate), reinvest_rate=float(reinvest_rate))
+    return npf.mirr(values=values, finance_rate=float(finance_rate), reinvest_rate=float(reinvest_rate))
 
 
 @tm1_tidy
@@ -243,7 +243,7 @@ def nper(rate, pmt, pv, fv=0, when=0, *args, **kwargs):
     :param when: 0 or 1. When the payment is made (Default: the payment is made at the end of the period)
     :return:
     """
-    return np.nper(rate=float(rate), pmt=float(pmt), pv=float(pv), fv=float(fv), when=int(when)).item(0)
+    return npf.nper(rate=float(rate), pmt=float(pmt), pv=float(pv), fv=float(fv), when=int(when)).item(0)
 
 
 @tm1_tidy
@@ -260,7 +260,7 @@ def rate(nper, pmt, pv, fv=0, when=0, guess=0.1, maxiter=100, *args, **kwargs):
     :param maxiter: maximum number of iterations
     :return:
     """
-    return np.rate(
+    return npf.rate(
         nper=float(nper),
         pmt=float(pmt),
         pv=float(pv),
@@ -346,13 +346,13 @@ def mode(values, *args, **kwargs):
 @tm1_tidy
 @tm1_io
 def var(values, *args, **kwargs):
-    return np.var(values)
+    return npf.var(values)
 
 
 @tm1_tidy
 @tm1_io
 def var_p(values, *args, **kwargs):
-    return np.var(values, ddof=1)
+    return npf.var(values, ddof=1)
 
 
 @tm1_tidy
