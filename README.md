@@ -54,7 +54,7 @@ All arguments have the same names as in the Excel functions (except: `type` is c
 
 # Requirements
 - [TM1py](https://github.com/cubewise-code/TM1py)
-- [numpy](https://github.com/numpy/numpy)
+- [numpy-financial](https://github.com/numpy/numpy-financial)
 - [scipy](https://github.com/scipy/scipy)
 - [click](https://github.com/pallets/click/)
 
