@@ -1,6 +1,8 @@
-requests==2.21.0
+requests>=2.21.0
 numpy-financial>=1.0.0
-pandas==0.24.2
+pandas>=0.24.2
 TM1py>=1.3.1
-pytz==2018.9
-click
+pytz>=2018.9
+click>=7.0
+python-dateutil~=2.8.0
+scipy>=1.2.1

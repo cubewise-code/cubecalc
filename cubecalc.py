@@ -3,9 +3,10 @@ import datetime
 import logging
 import os
 import sys
+from typing import Dict
 
 import click
-from TM1py import TM1Service
+from TM1py import TM1Service, MDXView
 from TM1py.Utils.Utils import CaseAndSpaceInsensitiveDict
 
 import methods
@@ -50,14 +51,17 @@ CONFIG = os.path.join(CURRENT_DIRECTORY, "config.ini")
 
 logging.basicConfig(
     filename=LOGFILE,
-    format='%(asctime)s - ' + APP_NAME + ' - %(levelname)s - %(message)s',
-    level=logging.INFO)
+    format="%(asctime)s - " + APP_NAME + " - %(levelname)s - %(message)s",
+    level=logging.INFO,
+)
+# also log to stdout
+logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
 
 class CubeCalc:
 
     def __init__(self):
-        self.tm1_services = dict()
+        self.tm1_services: Dict[str, TM1Service] = dict()
         self.setup()
 
     def setup(self):
@@ -94,12 +98,18 @@ class CubeCalc:
         :return:
         """
         try:
-            result = METHODS[method](**parameters, tm1_services=self.tm1_services)
-            logging.info("Successfully calculated {method} with result: {result} from parameters: {parameters}".format(
-                method=method,
-                parameters=parameters,
-                result=result))
+            # single mode
+            if "dimension" not in parameters:
+                logging.info("Running in single mode")
+                result = METHODS[method](**parameters, tm1_services=self.tm1_services)
+                logging.info(f"Successfully calculated {method} with result: {result} from parameters: {parameters}")
+                return True
+
+            # iterative mode
+            self.execute_iterative_mode(method, parameters)
+            logging.info(f"Successfully calculated {method} in iterative mode with parameters: {parameters}")
             return True
+
         except Exception as ex:
             message = "Failed calculating {method} with parameters {parameters}. Error: {error}".format(
                 method=method,
@@ -109,6 +119,58 @@ class CubeCalc:
             return False
         finally:
             self.logout()
+
+    def execute_iterative_mode(self, method, parameters):
+        dimension = parameters.get("dimension")
+        hierarchy = parameters.get("hierarchy", dimension)
+
+        tm1: TM1Service = self.tm1_services[parameters['tm1_source']]
+        if "subset" in parameters:
+            subset = parameters.pop("subset")
+            element_names = tm1.subsets.get_element_names(
+                dimension_name=dimension,
+                hierarchy_name=hierarchy,
+                subset_name=subset,
+                private=False)
+
+        else:
+            element_names = tm1.elements.get_leaf_element_names(
+                dimension_name=dimension,
+                hierarchy_name=hierarchy)
+
+        # only pass tidy in run for last element
+        if "tidy" in parameters:
+            tidy = parameters.pop("tidy")
+        else:
+            tidy = False
+
+        for element in element_names:
+            self.alter_view(**parameters, element=element)
+            result = METHODS[method](
+                **parameters,
+                tm1_services=self.tm1_services,
+                tidy=tidy if element == element_names[-1] else False)
+            logging.info(f"Successfully calculated {method} with result: {result} for title element {element}")
+
+    def alter_view(self, tm1_source: str, tm1_target: str, cube_source: str, view_source: str, cube_target: str,
+                   view_target: str, dimension: str, hierarchy: str, element: str):
+
+        for tm1_instance_name, cube, view in zip(
+                [tm1_source, tm1_target],
+                [cube_source, cube_target],
+                [view_source, view_target]):
+            tm1 = self.tm1_services[tm1_instance_name]
+            view = tm1.views.get(cube_source, view_source, private=False)
+
+            if isinstance(view, MDXView):
+                dimension = tm1.dimensions.determine_actual_object_name("Dimension", dimension)
+                hierarchy = tm1.hierarchies.determine_actual_object_name("Hierarchy", hierarchy)
+                view.substitute_title(dimension, hierarchy, element)
+
+            else:
+                view.substitute_title(dimension, element)
+
+            tm1.views.update(view, private=False)
 
 
 def exit_cubecalc(success, elapsed_time):
@@ -136,8 +198,10 @@ def main(click_arguments):
     cube_source, 
     cube_target, 
     view_source, 
-    view_target
-    ...
+    view_target,
+    dimension,
+    subset
+
     """
     parameters = {click_arguments.args[arg][2:]: click_arguments.args[arg + 1]
                   for arg
