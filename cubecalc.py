@@ -124,17 +124,28 @@ class CubeCalc:
         dimension = parameters.get("dimension")
         hierarchy = parameters.get("hierarchy", dimension)
 
-        tm1: TM1Service = self.tm1_services[parameters['tm1_source']]
+        tm1_source_name = parameters['tm1_source']
+        tm1_target_name = parameters['tm1_target']
+
+        tm1_source: TM1Service = self.tm1_services[tm1_source_name]
+        tm1_target: TM1Service = self.tm1_services[tm1_target_name]
+
+        cube_source = parameters.get("cube_source")
+        view_source = parameters.get("view_source")
+
+        cube_target = parameters.get("cube_target")
+        view_target = parameters.get("view_target")
+
         if "subset" in parameters:
             subset = parameters.pop("subset")
-            element_names = tm1.subsets.get_element_names(
+            element_names = tm1_source.subsets.get_element_names(
                 dimension_name=dimension,
                 hierarchy_name=hierarchy,
                 subset_name=subset,
                 private=False)
 
         else:
-            element_names = tm1.elements.get_leaf_element_names(
+            element_names = tm1_source.elements.get_leaf_element_names(
                 dimension_name=dimension,
                 hierarchy_name=hierarchy)
 
@@ -144,6 +155,16 @@ class CubeCalc:
         else:
             tidy = False
 
+        if not tidy:
+            original_view_source = tm1_source.views.get(
+                cube_name=cube_source,
+                view_name=view_source,
+                private=False)
+            original_view_target = tm1_target.views.get(
+                cube_name=cube_target,
+                view_name=view_target,
+                private=False)
+
         for element in element_names:
             self.alter_view(**parameters, element=element)
             result = METHODS[method](
@@ -152,15 +173,20 @@ class CubeCalc:
                 tidy=tidy if element == element_names[-1] else False)
             logging.info(f"Successfully calculated {method} with result: {result} for title element {element}")
 
+        # restore original source_view, target_view
+        if not tidy:
+            tm1_source.views.update_or_create(original_view_source, False)
+            tm1_target.views.update_or_create(original_view_target, False)
+
     def alter_view(self, tm1_source: str, tm1_target: str, cube_source: str, view_source: str, cube_target: str,
                    view_target: str, dimension: str, hierarchy: str, element: str):
 
-        for tm1_instance_name, cube, view in zip(
+        for tm1_instance_name, cube_name, view_name in zip(
                 [tm1_source, tm1_target],
                 [cube_source, cube_target],
                 [view_source, view_target]):
             tm1 = self.tm1_services[tm1_instance_name]
-            view = tm1.views.get(cube_source, view_source, private=False)
+            view = tm1.views.get(cube_name, view_name, private=False)
 
             if isinstance(view, MDXView):
                 dimension = tm1.dimensions.determine_actual_object_name("Dimension", dimension)

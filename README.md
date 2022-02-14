@@ -45,7 +45,7 @@ view
 
 If `dimension`, `hierarchy` and `subset` arguments are passed, cubecalc will run the calculation for each element in the
 subset. The dynamic dimension (e.g., projects) **must** be placed in the titles! Effectively the source and target view
-is updated before every calculation. When no subset is passed, cubecalc will run the calculation for all leaf elements
+is updated before every calculation. When no subset is passed, cubecalc will run the calculation for all leaf elements.
 When no hierarchy is passed cubecalc assumes the same named hierarchy.
 
 > Examples
@@ -59,7 +59,7 @@ and pass arguments like this:
 ``` 
 --method "IRR" --tm1_source "tm1srv01" --tm1_target "tm1srv01" --cube_source "Py Project Planning" 
 --cube_target "Py Project Summary" --view_source "Project1" --view_target "Project1 IRR" --dimension "Project" 
---hierarchy "Project --subset "All Projects" --tidy True
+--hierarchy "Project --subset "All Projects"
 ```
 
 ```
@@ -119,15 +119,23 @@ the [Getting Started Guide](https://code.cubewise.com/tm1py-help-content/getting
 
 Just download the repository
 
+# Configuration
+
+Adjust the `config.ini` to match your TM1 environment:
+
+```
+[tm1srv01]
+base_url=https://localhost:12354
+user=admin
+password=YXBwbGU=
+decode_b64=True
+```
+
 # Samples
 
 - Adjust the `config.ini` file to match your setup
 - Execute the `setup sample.py` file
 - Run `cubecalc.py` with appropriate arguments from the commandline or from TI
-
-# Tests
-
-in Tests.py file
 
 # Contribution
 
