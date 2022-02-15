@@ -2,12 +2,13 @@ import configparser
 import datetime
 import logging
 import os
+import re
 import sys
 from typing import Dict
 
 import click
-from TM1py import TM1Service, MDXView
-from TM1py.Utils.Utils import CaseAndSpaceInsensitiveDict
+from TM1py import TM1Service, MDXView, AnonymousSubset
+from TM1py.Utils.Utils import CaseAndSpaceInsensitiveDict, case_and_space_insensitive_equals
 
 import methods
 from utils import set_current_directory
@@ -166,17 +167,51 @@ class CubeCalc:
                 private=False)
 
         for element in element_names:
-            self.alter_view(**parameters, element=element)
+            self.alter_view(tm1_source=tm1_source_name, tm1_target=tm1_target_name, cube_source=cube_source,
+                            view_source=view_source, cube_target=cube_target, view_target=view_target,
+                            dimension=dimension, hierarchy=hierarchy, element=element)
             result = METHODS[method](
                 **parameters,
                 tm1_services=self.tm1_services,
                 tidy=tidy if element == element_names[-1] else False)
-            logging.info(f"Successfully calculated {method} with result: {result} for title element {element}")
+            logging.info(f"Successfully calculated {method} with result: {result} for title element '{element}'")
 
         # restore original source_view, target_view
         if not tidy:
             tm1_source.views.update_or_create(original_view_source, False)
             tm1_target.views.update_or_create(original_view_target, False)
+
+    def substitute_mdx_view_title(self, view, dimension, hierarchy, element):
+        pattern = re.compile(r"\[" + dimension + r"\].\[" + hierarchy + r"\].\[(.*?)\]", re.IGNORECASE)
+        findings = re.findall(pattern, view.mdx)
+
+        if findings:
+            view.mdx = re.sub(
+                pattern=pattern,
+                repl=f"[{dimension}].[{hierarchy}].[{element}]",
+                string=view.mdx)
+            return
+
+        if hierarchy is None or case_and_space_insensitive_equals(dimension, hierarchy):
+            pattern = re.compile(r"\[" + dimension + r"\].\[(.*?)\]", re.IGNORECASE)
+            findings = re.findall(pattern, view.mdx)
+            if findings:
+                view.mdx = re.sub(
+                    pattern=pattern,
+                    repl=f"[{dimension}].[{element}]",
+                    string=view.mdx)
+                return
+
+        raise ValueError(f"No selection in title with dimension: '{dimension}' and hierarchy: '{hierarchy}'")
+
+    def substitute_native_view_title(self, view, dimension, element):
+        for title in view.titles:
+            if case_and_space_insensitive_equals(title.dimension_name, dimension):
+                title._subset = AnonymousSubset(dimension, dimension, elements=[element])
+                title._selected = element
+                return
+
+        raise ValueError(f"Dimension '{dimension}' not found in titles")
 
     def alter_view(self, tm1_source: str, tm1_target: str, cube_source: str, view_source: str, cube_target: str,
                    view_target: str, dimension: str, hierarchy: str, element: str):
@@ -191,10 +226,10 @@ class CubeCalc:
             if isinstance(view, MDXView):
                 dimension = tm1.dimensions.determine_actual_object_name("Dimension", dimension)
                 hierarchy = tm1.hierarchies.determine_actual_object_name("Hierarchy", hierarchy)
-                view.substitute_title(dimension, hierarchy, element)
+                self.substitute_mdx_view_title(view, dimension, hierarchy, element)
 
             else:
-                view.substitute_title(dimension, element)
+                self.substitute_native_view_title(view, dimension, element)
 
             tm1.views.update(view, private=False)
 

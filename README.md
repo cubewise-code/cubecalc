@@ -39,7 +39,7 @@ cubecalc offers two execution modes:
 > 1. Single Mode
 
 If no `dimension`, `hierarchy` and `subset` arguments are passed, cubecalc will execute the calculation for a single
-view
+view.
 
 > 2. Batch Mode
 
