@@ -3,8 +3,7 @@ import statistics
 
 import numpy_financial as npf
 from dateutil import parser
-from scipy import optimize
-from scipy import stats
+from scipy import optimize, stats
 
 
 def _generate_dates_from_rows(rows):
