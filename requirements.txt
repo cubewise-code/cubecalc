@@ -1,7 +1,7 @@
 requests>=2.21.0
 numpy-financial>=1.0.0
 pandas>=0.24.2
-TM1py>=1.3.1
+git+https://github.com/cubewise-code/tm1py.git
 pytz>=2018.9
 click>=7.0
 python-dateutil~=2.8.0

@@ -4,18 +4,71 @@ import statistics
 import numpy_financial as npf
 from dateutil import parser
 from scipy import optimize, stats
+from datetime import datetime
 
 
 def _generate_dates_from_rows(rows):
-    try:
-        dates = []
-        for row in rows:
-            element = row[-1]
-            dates.append(parser.parse(element).date())
-        return dates
-    # Not a valid date string
-    except ValueError:
-        return None
+    """
+    Converts row elements into datetime.date objects.
+    Supports:
+      - Standard date strings (e.g. '2024-03-31')
+      - Quarter formats (e.g. '2024-Q1' or '2024Q1')
+      - YearMonth formats (e.g. '2024-01' or '202401')
+    """
+    dates = []
+
+    for row in rows:
+        element = str(row[-1]).strip()
+
+        # Try parsing full date strings first (e.g. 2024-03-31)
+        try:
+            parsed = parser.parse(element, fuzzy=False)
+            dates.append(parsed.date())
+            continue
+        except (ValueError, TypeError):
+            pass
+
+        # --- Handle Quarter format (YYYY-Q# or YYYYYQ#) ---
+        if "Q" in element.upper():
+            try:
+                e = element.upper().replace("-", "")
+                year = int(e[:4])
+                q = int(e[-1])
+                if 1 <= q <= 4:
+                    # Map to end of quarter
+                    month = q * 3
+                    day = 31 if month in [3, 12] else 30
+                    date_obj = datetime(year, month, day).date()
+                    dates.append(date_obj)
+                    continue
+            except Exception:
+                pass
+
+        # --- Handle YearMonth format (YYYYMM or YYYY-MM) ---
+        digits = element.replace("-", "")
+        if len(digits) == 6 and digits.isdigit():
+            try:
+                year = int(digits[:4])
+                month = int(digits[4:])
+                if 1 <= month <= 12:
+                    # End of month (simple handling)
+                    if month in [1, 3, 5, 7, 8, 10, 12]:
+                        day = 31
+                    elif month == 2:
+                        # Leap year check
+                        day = 29 if (year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)) else 28
+                    else:
+                        day = 30
+                    date_obj = datetime(year, month, day).date()
+                    dates.append(date_obj)
+                    continue
+            except Exception:
+                pass
+
+        # If none of the formats matched
+        raise ValueError(f"Unrecognized date format: '{element}'")
+
+    return dates
 
 
 def tm1_io(func):

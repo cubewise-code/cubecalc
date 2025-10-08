@@ -4,6 +4,10 @@ from TM1py.Utils import CaseAndSpaceInsensitiveDict
 
 import methods
 
+import sys
+
+import os
+
 METHODS = CaseAndSpaceInsensitiveDict({
     "IRR": methods.irr,
     "NPV": methods.npv,
@@ -37,5 +41,12 @@ METHODS = CaseAndSpaceInsensitiveDict({
 })
 
 APP_NAME = "CubeCalc"
-LOGFILE = Path(__file__).parent.joinpath(APP_NAME + ".log")
-CONFIG = Path(__file__).parent.joinpath("config.ini")
+# Determine current working directory for logging and result_file
+try:
+    wd = sys._MEIPASS
+    base_path = os.path.dirname(sys.executable)
+    LOGFILE = os.path.join(base_path, APP_NAME + ".log")
+    CONFIG = os.path.join(base_path, "config.ini")
+except AttributeError:
+    LOGFILE = Path(__file__).parent.joinpath(APP_NAME + ".log")
+    CONFIG = Path(__file__).parent.joinpath("config.ini")
