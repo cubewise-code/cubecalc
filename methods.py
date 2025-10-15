@@ -5,7 +5,7 @@ import numpy_financial as npf
 from dateutil import parser
 from scipy import optimize, stats
 from datetime import datetime
-
+import calendar
 
 def _generate_dates_from_rows(rows):
     """
@@ -37,11 +37,12 @@ def _generate_dates_from_rows(rows):
                 if 1 <= q <= 4:
                     # Map to end of quarter
                     month = q * 3
-                    day = 31 if month in [3, 12] else 30
+                    # Get the actual number of days in the specified month
+                    day = calendar.monthrange(year, month)[1]
                     date_obj = datetime(year, month, day).date()
                     dates.append(date_obj)
                     continue
-            except Exception:
+            except ValueError:
                 pass
 
         # --- Handle YearMonth format (YYYYMM or YYYY-MM) ---
@@ -62,7 +63,7 @@ def _generate_dates_from_rows(rows):
                     date_obj = datetime(year, month, day).date()
                     dates.append(date_obj)
                     continue
-            except Exception:
+            except ValueError:
                 pass
 
         # If none of the formats matched

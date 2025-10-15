@@ -1,12 +1,8 @@
-from pathlib import Path
-
-from TM1py.Utils import CaseAndSpaceInsensitiveDict
-
-import methods
-
 import sys
-
 import os
+from pathlib import Path
+from TM1py.Utils import CaseAndSpaceInsensitiveDict
+import methods
 
 METHODS = CaseAndSpaceInsensitiveDict({
     "IRR": methods.irr,
