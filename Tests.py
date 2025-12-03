@@ -2,11 +2,49 @@ import configparser
 import os
 import unittest
 from datetime import date
+from dateutil.relativedelta import relativedelta
 
-from TM1py import TM1Service, Dimension, Hierarchy, Element, Cube, NativeView, AnonymousSubset, MDXView
+from TM1py import (
+    TM1Service,
+    Dimension,
+    Hierarchy,
+    Element,
+    Cube,
+    NativeView,
+    AnonymousSubset,
+    MDXView,
+)
 
-from methods import irr, npv, stdev, stdev_p, fv, fv_schedule, pv, xnpv, pmt, ppmt, mirr, xirr, nper, rate, effect, \
-    nominal, sln, mean, sem, median, mode, var, rng, count, skew, var_p, kurt
+from methods import (
+    irr,
+    npv,
+    stdev,
+    stdev_p,
+    fv,
+    fv_schedule,
+    pv,
+    xnpv,
+    pmt,
+    ppmt,
+    mirr,
+    xirr,
+    nper,
+    rate,
+    effect,
+    nominal,
+    sln,
+    mean,
+    sem,
+    median,
+    mode,
+    var,
+    rng,
+    count,
+    skew,
+    var_p,
+    kurt,
+    generate_dates_from_rows,
+)
 
 config = configparser.ConfigParser()
 config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), "config.ini"))
@@ -159,6 +197,54 @@ STDEV_P_EXPECTED_RESULT = 2.73861278752583
 STDEV_TOLERANCE = 0.00001
 
 
+
+
+
+class TestUtils(unittest.TestCase):
+
+    def test_generate_dates_from_rows_quarters(self):
+        dates = generate_dates_from_rows(["2025-Q1", "2025-Q2", "2025-Q3", "2025-Q4", "2026-Q1"])
+        expected_dates = [
+            date(2025, 3, 31),
+            date(2025, 6, 30),
+            date(2025, 9, 30),
+            date(2025, 12, 31),
+            date(2026, 3, 31)
+        ]
+        self.assertEqual(expected_dates, dates)
+
+
+    def test_generate_dates_from_rows_moths(self):
+        dates = generate_dates_from_rows(["2025-01", "2025-02", "2025-03", "2025-04", "2026-05"])
+        expected_dates = [
+            date(2025, 1, 31),
+            date(2025, 2, 28),
+            date(2025, 3, 31),
+            date(2025, 4, 30),
+            date(2026, 5, 31),
+        ]
+        self.assertEqual(expected_dates, dates)
+
+    def test_generate_dates_from_rows_dates(self):
+        dates = generate_dates_from_rows(
+            ["2025-01-31", "2025-02-12", "2025-03-8", "2025-04-15", "2026-05-24"]
+        )
+        expected_dates = [
+            date(2025, 1, 31),
+            date(2025, 2, 12),
+            date(2025, 3, 8),
+            date(2025, 4, 15),
+            date(2026, 5, 24),
+        ]
+        self.assertEqual(expected_dates, dates)
+
+    def test_generate_dates_from_rows_invalid(self):
+        with self.assertRaises(ValueError):
+            generate_dates_from_rows(
+                ["2025-01-31", "2025-02-12", "2025-03-8", "2025-04-15", "2026-05-42"]
+            )
+
+
 class TestMethods(unittest.TestCase):
 
     def test_irr(self):
@@ -290,13 +376,18 @@ class TestDecorators(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        start_date = date.today().replace(day=1)
+
         cls.dimension1 = Dimension(
             name=DIMENSION_NAMES[0],
             hierarchies=[
                 Hierarchy(
                     name=DIMENSION_NAMES[0],
                     dimension_name=DIMENSION_NAMES[0],
-                    elements=[Element(name="Element_{}".format(i), element_type="Numeric") for i in range(1, 101)])])
+                    elements=[
+                        Element((start_date + relativedelta(months=i)).strftime("%Y-%m"), "Numeric")
+                        for i
+                        in range(100)])])
         cls.dimension2 = Dimension(
             name=DIMENSION_NAMES[1],
             hierarchies=[
@@ -317,13 +408,13 @@ class TestDecorators(unittest.TestCase):
 
     def setUp(self):
         if not self.tm1.dimensions.exists(dimension_name=self.dimension1.name):
-            self.tm1.dimensions.create(dimension=self.dimension1)
+            self.tm1.dimensions.update_or_create(dimension=self.dimension1)
         if not self.tm1.dimensions.exists(dimension_name=self.dimension2.name):
-            self.tm1.dimensions.create(dimension=self.dimension2)
+            self.tm1.dimensions.update_or_create(dimension=self.dimension2)
         if not self.tm1.cubes.exists(cube_name=self.cube_source.name):
-            self.tm1.cubes.create(cube=self.cube_source)
+            self.tm1.cubes.update_or_create(cube=self.cube_source)
         if not self.tm1.cubes.exists(cube_name=self.cube_target.name):
-            self.tm1.cubes.create(cube=self.cube_target)
+            self.tm1.cubes.update_or_create(cube=self.cube_target)
 
     def tearDown(self):
         self.tm1.cubes.delete(cube_name=self.cube_source.name)
@@ -348,7 +439,7 @@ class TestDecorators(unittest.TestCase):
             subset=AnonymousSubset(
                 dimension_name=DIMENSION_NAMES[1],
                 expression="{[" + DIMENSION_NAMES[1] + "].[Element_1]}"))
-        self.tm1.cubes.views.create(
+        self.tm1.cubes.views.update_or_create(
             view=view_input,
             private=False)
         # create output view
@@ -361,13 +452,13 @@ class TestDecorators(unittest.TestCase):
             dimension_name=DIMENSION_NAMES[0],
             subset=AnonymousSubset(
                 dimension_name=DIMENSION_NAMES[0],
-                expression="{[" + DIMENSION_NAMES[0] + "].[Element_1]}"))
+                expression="{[" + DIMENSION_NAMES[0] + "].DefaultMember}"))
         view_output.add_column(
             dimension_name=DIMENSION_NAMES[1],
             subset=AnonymousSubset(
                 dimension_name=DIMENSION_NAMES[1],
                 expression="{[" + DIMENSION_NAMES[1] + "].[Element_1]}"))
-        self.tm1.cubes.views.create(
+        self.tm1.cubes.views.update_or_create(
             view=view_output,
             private=False)
         # write values into input view
@@ -384,10 +475,10 @@ class TestDecorators(unittest.TestCase):
             view_target=VIEW_NAME_TARGET)
         self.assertAlmostEqual(IRR_EXPECTED_RESULT, result, delta=IRR_TOLERANCE)
         # check output view
-        cell_value = next(self.tm1.cubes.cells.execute_view_values(
+        cell_value = self.tm1.cubes.cells.execute_view_values(
             cube_name=CUBE_NAME_TARGET,
             view_name=VIEW_NAME_TARGET,
-            private=False))
+            private=False)[0]
         self.assertAlmostEqual(cell_value, IRR_EXPECTED_RESULT, delta=IRR_TOLERANCE)
 
     def test_tm1io_input_mdx_view_output_mdx_view(self):
@@ -400,19 +491,19 @@ class TestDecorators(unittest.TestCase):
             cube_name=CUBE_NAME_SOURCE,
             view_name=VIEW_NAME_SOURCE,
             MDX=mdx_input)
-        self.tm1.cubes.views.create(
+        self.tm1.cubes.views.update_or_create(
             view=view_input,
             private=False)
         # create output view
         mdx_output = MDX_TEMPLATE_SHORT.format(
-            rows="{[" + DIMENSION_NAMES[0] + "].[Element_1]}",
+            rows="{[" + DIMENSION_NAMES[0] + "].DefaultMember}",
             columns="{[" + DIMENSION_NAMES[1] + "].[Element_1]}",
             cube=CUBE_NAME_TARGET)
         view_output = MDXView(
             cube_name=CUBE_NAME_TARGET,
             view_name=VIEW_NAME_TARGET,
             MDX=mdx_output)
-        self.tm1.cubes.views.create(
+        self.tm1.cubes.views.update_or_create(
             view=view_output,
             private=False)
         # write values into input view
@@ -429,10 +520,10 @@ class TestDecorators(unittest.TestCase):
             view_target=VIEW_NAME_TARGET)
         self.assertAlmostEqual(STDEV_EXPECTED_RESULT, result, delta=STDEV_TOLERANCE)
         # check output view
-        cell_value = next(self.tm1.cubes.cells.execute_view_values(
+        cell_value = self.tm1.cubes.cells.execute_view_values(
             cube_name=CUBE_NAME_TARGET,
             view_name=VIEW_NAME_TARGET,
-            private=False))
+            private=False)[0]
         self.assertAlmostEqual(cell_value, STDEV_EXPECTED_RESULT, delta=STDEV_TOLERANCE)
 
     def test_tm1io_input_view(self):
@@ -445,7 +536,7 @@ class TestDecorators(unittest.TestCase):
             cube_name=CUBE_NAME_SOURCE,
             view_name=VIEW_NAME_SOURCE,
             MDX=mdx_input)
-        self.tm1.cubes.views.create(
+        self.tm1.cubes.views.update_or_create(
             view=view_input,
             private=False)
         # write values into input view
@@ -462,14 +553,14 @@ class TestDecorators(unittest.TestCase):
     def test_tm1io_input_values_output_view(self):
         # define output view
         mdx_output = MDX_TEMPLATE_SHORT.format(
-            rows="{[" + DIMENSION_NAMES[0] + "].[Element_1]}",
+            rows="{[" + DIMENSION_NAMES[0] + "].DefaultMember}",
             columns="{[" + DIMENSION_NAMES[1] + "].[Element_1]}",
             cube=CUBE_NAME_TARGET)
         view_output = MDXView(
             cube_name=CUBE_NAME_TARGET,
             view_name=VIEW_NAME_TARGET,
             MDX=mdx_output)
-        self.tm1.cubes.views.create(
+        self.tm1.cubes.views.update_or_create(
             view=view_output,
             private=False)
         # execute method
@@ -481,11 +572,11 @@ class TestDecorators(unittest.TestCase):
             values=STDEV_INPUT_VALUES,
             tidy=False)
         # do check
-        result = next(self.tm1.cubes.cells.execute_view_values(
+        result = self.tm1.cubes.cells.execute_view_values(
             cube_name=CUBE_NAME_TARGET,
             view_name=VIEW_NAME_TARGET,
             private=False
-        ))
+        )[0]
         self.assertAlmostEqual(result, STDEV_P_EXPECTED_RESULT, delta=STDEV_TOLERANCE)
 
     def test_tm1tidy_true_input_view_output_view(self):
@@ -498,19 +589,19 @@ class TestDecorators(unittest.TestCase):
             cube_name=CUBE_NAME_SOURCE,
             view_name=VIEW_NAME_SOURCE,
             MDX=mdx_input)
-        self.tm1.cubes.views.create(
+        self.tm1.cubes.views.update_or_create(
             view=view_input,
             private=False)
         # create target_view
         mdx_output = MDX_TEMPLATE_SHORT.format(
-            rows="{[" + DIMENSION_NAMES[0] + "].[Element_1]}",
+            rows="{[" + DIMENSION_NAMES[0] + "].DefaultMember}",
             columns="{[" + DIMENSION_NAMES[1] + "].[Element_1]}",
             cube=CUBE_NAME_TARGET)
         view_output = MDXView(
             cube_name=CUBE_NAME_TARGET,
             view_name=VIEW_NAME_TARGET,
             MDX=mdx_output)
-        self.tm1.cubes.views.create(
+        self.tm1.cubes.views.update_or_create(
             view=view_output,
             private=False)
         # write values into input view
@@ -546,19 +637,19 @@ class TestDecorators(unittest.TestCase):
             cube_name=CUBE_NAME_SOURCE,
             view_name=VIEW_NAME_SOURCE,
             MDX=mdx_input)
-        self.tm1.cubes.views.create(
+        self.tm1.cubes.views.update_or_create(
             view=view_input,
             private=False)
         # define output view
         mdx_output = MDX_TEMPLATE_SHORT.format(
-            rows="{[" + DIMENSION_NAMES[0] + "].[Element_1]}",
+            rows="{[" + DIMENSION_NAMES[0] + "].DefaultMember}",
             columns="{[" + DIMENSION_NAMES[1] + "].[Element_1]}",
             cube=CUBE_NAME_TARGET)
         view_output = MDXView(
             cube_name=CUBE_NAME_TARGET,
             view_name=VIEW_NAME_TARGET,
             MDX=mdx_output)
-        self.tm1.cubes.views.create(
+        self.tm1.cubes.views.update_or_create(
             view=view_output,
             private=False)
         # write values into input view
@@ -591,7 +682,7 @@ class TestDecorators(unittest.TestCase):
             cube_name=CUBE_NAME_SOURCE,
             view_name=VIEW_NAME_SOURCE,
             MDX=mdx_input)
-        self.tm1.cubes.views.create(
+        self.tm1.cubes.views.update_or_create(
             view=view_input,
             private=False)
         # write values into input view
@@ -620,7 +711,7 @@ class TestDecorators(unittest.TestCase):
             cube_name=CUBE_NAME_SOURCE,
             view_name=VIEW_NAME_SOURCE,
             MDX=mdx_input)
-        self.tm1.cubes.views.create(
+        self.tm1.cubes.views.update_or_create(
             view=view_input,
             private=False)
         # write values into input view
@@ -641,14 +732,14 @@ class TestDecorators(unittest.TestCase):
     def test_tm1tidy_true_input_values_output_view(self):
         # define output view
         mdx_output = MDX_TEMPLATE_SHORT.format(
-            rows="{[" + DIMENSION_NAMES[0] + "].[Element_1]}",
+            rows="{[" + DIMENSION_NAMES[0] + "].DefaultMember}",
             columns="{[" + DIMENSION_NAMES[1] + "].[Element_1]}",
             cube=CUBE_NAME_TARGET)
         view_output = MDXView(
             cube_name=CUBE_NAME_TARGET,
             view_name=VIEW_NAME_TARGET,
             MDX=mdx_output)
-        self.tm1.cubes.views.create(
+        self.tm1.cubes.views.update_or_create(
             view=view_output,
             private=False)
         # execute method
@@ -668,14 +759,14 @@ class TestDecorators(unittest.TestCase):
     def test_tm1tidy_false_input_values_output_view(self):
         # define output view
         mdx_output = MDX_TEMPLATE_SHORT.format(
-            rows="{[" + DIMENSION_NAMES[0] + "].[Element_1]}",
+            rows="{[" + DIMENSION_NAMES[0] + "].DefaultMember}",
             columns="{[" + DIMENSION_NAMES[1] + "].[Element_1]}",
             cube=CUBE_NAME_TARGET)
         view_output = MDXView(
             cube_name=CUBE_NAME_TARGET,
             view_name=VIEW_NAME_TARGET,
             MDX=mdx_output)
-        self.tm1.cubes.views.create(
+        self.tm1.cubes.views.update_or_create(
             view=view_output,
             private=False)
         # execute method

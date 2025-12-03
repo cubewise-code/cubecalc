@@ -101,9 +101,9 @@ class CubeCalc:
         if "subset" in parameters:
             subset = parameters.pop("subset")
             element_names = tm1_source.subsets.get_element_names(
-                dimension_name=dimension,
-                hierarchy_name=hierarchy,
-                subset_name=subset,
+                dimension,
+                hierarchy,
+                subset,
                 private=False)
 
         else:
